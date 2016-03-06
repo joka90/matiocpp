@@ -18,12 +18,13 @@ int main(int argc, char* argv[])
 	for(auto& vv : vars)
 	{
 		std::cout << "mat.GetVarNames() : " << vv << std::endl;
+		mat.Read(vv).Print(0);
 	}
 	std::cout << "Number of variables: " << mat.NumVars() << std::endl;
 
 	std::cout << "Filename: " <<  mat.GetFilename() << std::endl;
 
-	matio::MatVar& v = mat.Read(vars.front());
+	matio::MatVar& v = mat.Read("var50");
 
 	std::cout << "x.GetSize(): " <<  v.GetSize() << std::endl;
 	std::cout << "x.GetNumberOfFields() : " <<  v.GetNumberOfFields() << std::endl;
@@ -34,6 +35,17 @@ int main(int argc, char* argv[])
 		std::cout << "x.GetStructFieldname() : " << f << std::endl;
 	}
 	mat.Close();
+	double v1d[] = {234.4,234.323,456.45,432.002};
+	size_t r = 4;
+	matio::MatVar v1("v1", matio::classes::MAT_C_DOUBLE, matio::types::MAT_T_DOUBLE, 4, &r, v1d, matio::flags::MAT_F_GLOBAL);
+
+	matio::Mat mat2("new.mat",matio::ft::MAT_FT_MAT4);
+	//mat2.Open("new.mat",matio::acc::MAT_ACC_RDWR);
+	mat2.Write(v1,matio::compression::MAT_COMPRESSION_NONE);
+	mat2.Close();
+	//TODO
+	//const char fil[][]={'hej', 'hopp', 'gummi'};
+	//matio::MatVar v2("v2", 3, &r, fil, 3);
 
 	return 0;
 }

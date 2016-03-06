@@ -160,12 +160,13 @@ public:
 	Mat();
 	Mat(const Mat&);
 	~Mat();
+	Mat(const std::string& matname, ft mat_file_ver);
 	Mat(const std::string& matname, const std::string& hdr_str, ft mat_file_ver);
 	bool Open(const std::string& matname, acc mode);
 	void PrintVars() const;
 	std::vector<std::string> GetVarNames() const;
 	size_t NumVars() const;
-	bool Close();
+	bool   Close();
 	std::string GetFilename();
 	ft GetVersion();
 	MatVar&  Read(const std::string& name);
@@ -186,18 +187,15 @@ public:
 	MatVar();
 	MatVar(matvar_t * _matvar);
 	~MatVar();
-	//	MatVar(const std::string& name,enum matio_classes class_type,
-	//			enum matio_types data_type,int rank,size_t *dims,
-	//			void *data,int opt);
-	//	MatVar  *Mat_VarCreateStruct(const char *name,int rank,size_t *dims,
-	//			const char **fields,unsigned nfields);
-	//	MatVar  *Mat_VarDuplicate(const MatVar &in, int opt);
+	MatVar(std::string name, classes class_type, types data_type, int rank, size_t *dims, void *data, flags opt);
+	MatVar(std::string name, int rank, size_t *dims, const char **fields, unsigned nfields);
+	MatVar(const MatVar &in);
 	MatVar&  GetCell(int index);
 	MatVar&  GetCells(int *start, int *stride, int *edge);
 	MatVar&  GetCellsLinear(int start, int stride, int edge);
-	size_t     GetSize() const;
-	size_t     GetNumberOfFields() const;
-	bool       AddStructField(const std::string& fieldname);
+	size_t   GetSize() const;
+	size_t   GetNumberOfFields() const;
+	bool     AddStructField(const std::string& fieldname);
 	std::vector<std::string> GetStructFieldnames() const;
 	MatVar&  GetStructFieldByIndex(size_t field_index, size_t index);
 	MatVar&  GetStructFieldByName(const std::string& field_name, size_t index);
@@ -207,10 +205,10 @@ public:
 	MatVar&  GetStructs(int *start,int *stride, int *edge,int copy_fields);
 	MatVar&  GetStructsLinear(int start,int stride, int edge,int copy_fields);
 	void     Print(int printdata );
-	bool      ReadDataAll();
-	MatVar&   SetCell(int index,MatVar &cell);
-	MatVar&   SetStructFieldByIndex(size_t field_index, size_t index, MatVar &field);
-	MatVar&   SetStructFieldByName(const std::string& field_name, size_t index, MatVar &field);
+	bool     ReadDataAll();
+	MatVar&  SetCell(int index,MatVar &cell);
+	MatVar&  SetStructFieldByIndex(size_t field_index, size_t index, MatVar &field);
+	MatVar&  SetStructFieldByName(const std::string& field_name, size_t index, MatVar &field);
 private:
 
 	matvar_t * _matvar;

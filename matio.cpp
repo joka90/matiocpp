@@ -248,6 +248,13 @@ Mat::~Mat()
 	}
 }
 
+Mat::Mat(const std::string& matname, ft mat_file_ver)
+{
+	const char *temp_matname = matname.c_str();
+	const char *temp_hdr_str = NULL;
+	_mat = Mat_CreateVer(temp_matname,temp_hdr_str, convEnum(mat_file_ver));
+}
+
 Mat::Mat(const std::string& matname, const std::string& hdr_str, ft mat_file_ver)
 {
 	const char *temp_matname = matname.c_str();
@@ -260,7 +267,13 @@ bool Mat::Open(const std::string& matname, acc mode)
 	if(_mat == nullptr)
 	{
 		const char *temp_matname = matname.c_str();
-		_mat = Mat_Open(temp_matname, convEnum(mode));
+		mat_t* t = Mat_Open(temp_matname, convEnum(mode));
+		if(t == NULL)
+		{
+			return false;
+		}
+		_mat = t;
+
 		matvar_t * matvar;
 		do {
 			matvar = Mat_VarReadNextInfo(_mat);
@@ -350,7 +363,7 @@ MatVar&  Mat::Read(const std::string& name)
 	return *(new MatVar());
 }
 
-bool Mat::Write(MatVar &_matvar, compression compress )
+bool Mat::Write(MatVar &_matvar, compression compress)
 {
 	if(_mat != nullptr && _matvar._matvar != nullptr)
 	{
@@ -437,24 +450,26 @@ MatVar::~MatVar()
 }
 
 
-/*MatVar(std::string name,enum matio_classes class_type,
-                      enum matio_types data_type,int rank,size_t *dims,
-                      void *data,int opt)
+MatVar::MatVar(std::string name, classes class_type, types data_type, int rank, size_t *dims, void *data, flags opt)
+{
+	const char *temp_fieldname = name.c_str();
+	_matvar=Mat_VarCreate(temp_fieldname, convEnum(class_type),
+			convEnum(data_type), rank, dims,
+			data, convEnum(opt));
+}
+
+MatVar::MatVar(std::string name, int rank, size_t *dims, const char **fields, unsigned nfields)
+{
+	const char *temp_fieldname = name.c_str();
+	_matvar=Mat_VarCreateStruct(temp_fieldname, rank, dims, fields, nfields);
+}
+
+MatVar::MatVar(const MatVar &in)
+:_matvar(Mat_VarDuplicate(in._matvar,1))//1 to do a deep copy
 {
 
 }
 
-MatVar  *Mat_VarCreateStruct(const char **name,int rank,size_t *dims,
-                      const char ***fields,unsigned nfields)
-{
-
-}
-
-MatVar  *Mat_VarDuplicate(const MatVar &in, int opt)
-{
-
-}
- */
 MatVar&  MatVar::GetCell(int index)
 {
 	if(_matvar != nullptr)
