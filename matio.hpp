@@ -2,7 +2,8 @@
 #define MATIO_HPP
 
 #include <string>
-
+#include <map>
+#include <vector>
 
 //Forward declare the matio c types
 struct _mat_t;
@@ -149,27 +150,38 @@ enum class lookup : char {
 //EXTERN size_t Mat_SizeOf(enum matio_types data_type);
 //EXTERN size_t Mat_SizeOfClass(int class_type);
 
+//Forward declare MatVar
+class MatVar;
+
 class Mat {
 public:
 	static void GetLibraryVersion(int *major,int *minor,int *release);
 
-	//Mat      *Mat_CreateVer(const char *matname,const char *hdr_str,
-	//                       ft mat_file_ver);
 	Mat();
 	Mat(const Mat&);
 	~Mat();
 	Mat(const std::string& matname, const std::string& hdr_str, ft mat_file_ver);
-	int Open(const std::string& matname, acc mode);
-	int Close();
+	bool Open(const std::string& matname, acc mode);
+	void PrintVars() const;
+	std::vector<std::string> GetVarNames() const;
+	size_t NumVars() const;
+	bool Close();
 	std::string GetFilename();
 	ft GetVersion();
-	int         Rewind();
+	MatVar&  Read(const std::string& name);
+	MatVar&  ReadInfo(const std::string& name);
+	bool Delete(const std::string& name);
+	bool Write(MatVar &_matvar, compression compress);
+	bool WriteInfo(MatVar &_matvar);
+	bool WriteData(MatVar &_matvar, void *data, int *start, int *stride, int *edge);
 private:
 	mat_t  *_mat;
+	std::map<std::string, matvar_t *> _vars;
 };
 
 /* MAT variable functions */
 class MatVar {
+	friend class Mat; // Mat is a friend of MatVar
 public:
 	MatVar();
 	MatVar(matvar_t * _matvar);
@@ -179,44 +191,26 @@ public:
 	//			void *data,int opt);
 	//	MatVar  *Mat_VarCreateStruct(const char *name,int rank,size_t *dims,
 	//			const char **fields,unsigned nfields);
-	//	int        Mat_VarDelete(Mat &_mat, const char *name);
 	//	MatVar  *Mat_VarDuplicate(const MatVar &in, int opt);
-	//	void       Mat_VarFree(MatVar &_matvar);
 	MatVar&  GetCell(int index);
-	MatVar&  GetCells(int *start,int *stride,
-			int *edge);
-	MatVar&  GetCellsLinear(int start,int stride,
-			int edge);
+	MatVar&  GetCells(int *start, int *stride, int *edge);
+	MatVar&  GetCellsLinear(int start, int stride, int edge);
 	size_t     GetSize() const;
-	unsigned   GetNumberOfFields() const;
-	int        AddStructField(const std::string& fieldname);
-	std::string GetStructFieldnames() const;
-	MatVar&  GetStructFieldByIndex(size_t field_index,size_t index);
-	MatVar&  GetStructFieldByName(const std::string& field_name,size_t index);
-	MatVar&  GetStructField(size_t name_or_index, int opt,int index);
-	MatVar&  GetStructField(const std::string& name_or_index, int opt,int index);
+	size_t     GetNumberOfFields() const;
+	bool       AddStructField(const std::string& fieldname);
+	std::vector<std::string> GetStructFieldnames() const;
+	MatVar&  GetStructFieldByIndex(size_t field_index, size_t index);
+	MatVar&  GetStructFieldByName(const std::string& field_name, size_t index);
+	MatVar&  GetStructField(size_t name_or_index, int opt, int index);
+	MatVar&  GetStructField(const std::string& name_or_index, int opt, int index);
 
-	MatVar&  GetStructs(int *start,int *stride,
-			int *edge,int copy_fields);
-	MatVar&  GetStructsLinear(int start,int stride,
-			int edge,int copy_fields);
+	MatVar&  GetStructs(int *start,int *stride, int *edge,int copy_fields);
+	MatVar&  GetStructsLinear(int start,int stride, int edge,int copy_fields);
 	void     Print(int printdata );
-	MatVar&  Read(Mat& _mat, const std::string& name );
-	int      ReadData(const Mat& _mat,MatVar &_matvar,void *data,
-			int *start,int *stride,int *edge);
-	int      ReadDataAll(MatVar &_matvar);
-	int      ReadDataLinear(MatVar &_matvar,void *data,
-			int start,int stride,int edge);
-	//MatVar  ReadInfo( Mat &_mat, const char *name );
-	//MatVar  ReadNext( Mat &_mat );
-	//MatVar  *Mat_VarReadNextInfo( Mat &_mat );
+	bool      ReadDataAll();
 	MatVar&   SetCell(int index,MatVar &cell);
-	MatVar&   SetStructFieldByIndex(size_t field_index,size_t index,MatVar &field);
-	MatVar&   SetStructFieldByName(const std::string& field_name,size_t index,MatVar &field);
-	int  	  Write(Mat &_mat,MatVar &_matvar, compression compress );
-	int       WriteInfo(Mat &_mat,MatVar &_matvar);
-	int       WriteData(Mat &_mat,MatVar &_matvar,void *data,
-			int *start,int *stride,int *edge);
+	MatVar&   SetStructFieldByIndex(size_t field_index, size_t index, MatVar &field);
+	MatVar&   SetStructFieldByName(const std::string& field_name, size_t index, MatVar &field);
 private:
 
 	matvar_t * _matvar;

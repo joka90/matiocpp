@@ -3,6 +3,7 @@
 
 #include <string>
 #include <cstddef>
+#include <iostream>
 
 namespace {
 
@@ -219,12 +220,6 @@ void Mat::GetLibraryVersion(int *major,int *minor,int *release)
 	Mat_GetLibraryVersion(major, minor, release);
 }
 
-//Mat      *Mat_CreateVer(const char **matname,const char **hdr_str,
-//                       enum mat_ft mat_file_ver)
-//{
-//
-//}
-
 Mat::Mat()
 : _mat(nullptr)
 {
@@ -239,9 +234,16 @@ Mat::Mat(const Mat& t)
 
 Mat::~Mat()
 {
+	for(auto& var: _vars)
+	{
+		Mat_VarFree(var.second);
+		var.second=nullptr;
+	}
+	_vars.clear();
+
 	if(_mat != nullptr)
 	{
-		//delete _mat;
+		Mat_Close(_mat);
 		_mat = nullptr;
 	}
 }
@@ -253,25 +255,65 @@ Mat::Mat(const std::string& matname, const std::string& hdr_str, ft mat_file_ver
 	_mat = Mat_CreateVer(temp_matname,temp_hdr_str, convEnum(mat_file_ver));
 }
 
-int Mat::Open(const std::string& matname, acc mode)
+bool Mat::Open(const std::string& matname, acc mode)
 {
 	if(_mat == nullptr)
 	{
 		const char *temp_matname = matname.c_str();
 		_mat = Mat_Open(temp_matname, convEnum(mode));
+		matvar_t * matvar;
+		do {
+			matvar = Mat_VarReadNextInfo(_mat);
+			if ( matvar != NULL )
+			{
+				std::string name = matvar->name;
+				_vars[name]=matvar;
+			}
+		} while ( NULL != matvar);
+		Mat_Rewind(_mat);
 		return _mat != nullptr;
 	}
-	return 0;
+	return false;
 }
 
-int Mat::Close()
+void Mat::PrintVars() const
+{
+	for(auto& var: _vars)
+	{
+		std::cout << var.first << std::endl;
+	}
+}
+
+std::vector<std::string> Mat::GetVarNames() const
+{
+	std::vector<std::string> fields;
+	for(auto& var: _vars)
+	{
+		fields.push_back(var.first);
+	}
+	return fields;
+}
+
+size_t Mat::NumVars() const
+{
+	return _vars.size();
+}
+
+bool Mat::Close()
 {
 	if(_mat != nullptr)
 	{
+		for(auto& var: _vars)
+		{
+			Mat_VarFree(var.second);
+			var.second=nullptr;
+		}
+		_vars.clear();
 		Mat_Close(_mat);
 		_mat = nullptr;
+		return true;//return true if passed
 	}
-	return 0;
+	return false;
 }
 
 std::string Mat::GetFilename()
@@ -292,26 +334,88 @@ ft Mat::GetVersion()
 	return ft::MAT_FT_UNDEFINED;
 }
 
-int Mat::Rewind()
+MatVar&  Mat::Read(const std::string& name)
 {
 	if(_mat != nullptr)
 	{
-		return Mat_Rewind(_mat);
+		matvar_t* t;
+		auto it = _vars.find(name);
+		if (it != _vars.end())
+		{
+			t=it->second;
+			Mat_VarReadDataAll(_mat,t);
+			return *(new MatVar(t));
+		}
 	}
-	return 0;
+	return *(new MatVar());
 }
 
+bool Mat::Write(MatVar &_matvar, compression compress )
+{
+	if(_mat != nullptr && _matvar._matvar != nullptr)
+	{
+		return 0 == Mat_VarWrite(_mat,_matvar._matvar, convEnum(compress));
+	}
+	return false;
+}
 
+bool Mat::WriteInfo(MatVar &_matvar)
+{
+	if(_mat != nullptr && _matvar._matvar != nullptr)
+	{
+		return 0 == Mat_VarWriteInfo(_mat,_matvar._matvar);
+	}
+	return false;
+}
 
-/* MAT variable functions */
-//MatVar  *Mat_VarCalloc(void)
-//{
-//
-//}
+bool Mat::WriteData(MatVar &_matvar,void *data, int *start,int *stride,int *edge)
+{
+	if(_mat != nullptr && _matvar._matvar != nullptr)
+	{
+		return 0 == Mat_VarWriteData(_mat,_matvar._matvar, data, start, stride, edge);
+	}
+	return false;
+}
+
+MatVar&  Mat::ReadInfo(const std::string& name)
+{
+	if(_mat != nullptr)
+	{
+		matvar_t* t;
+		auto it = _vars.find(name);
+		if (it != _vars.end())
+		{
+			t=it->second;
+			return *(new MatVar(t));
+		}
+	}
+	return *(new MatVar());
+}
+
+bool Mat::Delete(const std::string& name)
+{
+	if(_mat != nullptr)
+	{
+		matvar_t* t;
+		auto it = _vars.find(name);
+		if (it != _vars.end())
+		{
+			t=it->second;
+			const char *temp_name = name.c_str();
+			int ret = Mat_VarDelete(_mat, temp_name);
+			if(ret == 0)
+			{
+				_vars.erase(it);
+				return true;
+			}
+		}
+	}
+	return false;
+}
 
 MatVar::MatVar()
 {
-	//TODO constuct here
+	// Construct here
 	_matvar = Mat_VarCalloc();
 }
 
@@ -346,17 +450,7 @@ MatVar  *Mat_VarCreateStruct(const char **name,int rank,size_t *dims,
 
 }
 
-int        Mat_VarDelete(Mat &_mat, const char **name)
-{
-
-}
-
 MatVar  *Mat_VarDuplicate(const MatVar &in, int opt)
-{
-
-}
-
-void       Mat_VarFree(MatVar &_matvar)
 {
 
 }
@@ -376,7 +470,7 @@ MatVar&  MatVar::GetCells(int *start,int *stride, int *edge)
 	if(_matvar != nullptr)
 	{
 		matvar_t  **t = Mat_VarGetCells(_matvar,start,stride,edge); //TODO fix double pointer
-		//return *(new MatVar(&t));;
+		//return *(new MatVar(t));
 	}
 	return (*this);
 }
@@ -400,7 +494,7 @@ size_t MatVar::GetSize() const
 	return 0;
 }
 
-unsigned   MatVar::GetNumberOfFields() const
+size_t MatVar::GetNumberOfFields() const
 {
 	if(_matvar != nullptr)
 	{
@@ -409,23 +503,29 @@ unsigned   MatVar::GetNumberOfFields() const
 	return 0;
 }
 
-int MatVar::AddStructField(const std::string& fieldname)
+bool MatVar::AddStructField(const std::string& fieldname)
 {
 	if(_matvar != nullptr)
 	{
 		const char *temp_fieldname = fieldname.c_str();
-		return Mat_VarAddStructField(_matvar, temp_fieldname);
+		return 0 == Mat_VarAddStructField(_matvar, temp_fieldname);
 	}
-	return 0;
+	return false;
 }
 
-std::string MatVar::GetStructFieldnames() const
+std::vector<std::string> MatVar::GetStructFieldnames() const
 {
+	std::vector<std::string> fields;
 	if(_matvar != nullptr)
-	{	//TODO
-		//char * const * t = Mat_VarGetStructFieldnames(_matvar);
+	{
+		size_t s =  Mat_VarGetNumberOfFields(_matvar);
+		char * const * f = Mat_VarGetStructFieldnames(_matvar);
+		for(size_t i = 0; i < s; i++)
+		{
+			fields.push_back(std::string(f[i]));
+		}
 	}
-	return "";
+	return fields;
 }
 
 MatVar& MatVar::GetStructFieldByIndex(size_t field_index, size_t index)
@@ -471,8 +571,7 @@ MatVar&  MatVar::GetStructField(const std::string& field_name, int opt,int index
 }
 
 //TODO add without copy
-MatVar&  MatVar::GetStructs(int *start,int *stride,
-		int *edge,int copy_fields)
+MatVar&  MatVar::GetStructs(int *start, int *stride, int *edge, int copy_fields)
 {
 	if(_matvar != nullptr)
 	{
@@ -500,108 +599,41 @@ void MatVar::Print(int printdata)
 		Mat_VarPrint(_matvar, printdata);
 	}
 }
+bool MatVar::ReadDataAll()
+{
+	//TODO if imitate read for some reason
+	return false;
+}
 
-//TODO move to Mat
-MatVar&  MatVar::Read(Mat& _mat, const std::string& name)
+MatVar& MatVar::SetCell(int index, MatVar &cell)
 {
 	if(_matvar != nullptr)
 	{
-		const char *temp_name = name.c_str();
-
-		//matvar_t* t = Mat_VarRead(&, temp_name);
-		//return *(new MatVar(t));
+		Mat_VarSetCell(_matvar, index, cell._matvar);
 	}
+	//Return our self, so it's possible to dot several times.
 	return (*this);
 }
-//TODO move to Mat
-int MatVar::ReadData(const Mat& _mat,MatVar &_matvar,void *data,
-		int *start,int *stride,int *edge)
-{
-	return 0;
-}
 
-int MatVar::ReadDataAll(MatVar &_matvar)
-{
-	return 0;
-}
-
-//TODO move to dont use void pointer, use real types
-int MatVar::ReadDataLinear(MatVar &_matvar,void *data, int start,int stride,int edge)
-{
-	return 0;
-}
-
-//MatVar  MatVar::ReadInfo( Mat &_mat, const char **name )
-//{
-//
-//}
-
-//MatVar  MatVar::ReadNext( Mat &_mat )
-//{
-//
-//}
-
-//MatVar  *Mat_VarReadNextInfo( Mat &_mat )
-//{
-//
-//}
-
-MatVar& MatVar::SetCell(int index,MatVar &cell)
+MatVar& MatVar::SetStructFieldByIndex(size_t field_index, size_t index, MatVar &field)
 {
 	if(_matvar != nullptr)
 	{
-		//TODO how to send private pointer to Mat_VarSetCell?
-		//matvar_t* t = Mat_VarSetCell(_matvar, index, &cell);
-		//return *(new MatVar(t));
+		Mat_VarSetStructFieldByIndex(_matvar, field_index, index, (field._matvar));
 	}
+	//Return our self, so it's possible to dot several times.
 	return (*this);
 }
 
-MatVar&   MatVar::SetStructFieldByIndex(size_t field_index,size_t index,MatVar &field)
+MatVar& MatVar::SetStructFieldByName(const std::string& field_name,size_t index,MatVar &field)
 {
 	if(_matvar != nullptr)
 	{
-		//TODO how to send private pointer to Mat_VarSetCell?
-		//matvar_t* t = Mat_VarSetStructFieldByIndex(_matvar, field_index,index,&field);
-		//return *(new MatVar(t));
+		const char * temp_field_name = field_name.c_str();
+		Mat_VarSetStructFieldByName(_matvar, temp_field_name, index, (field._matvar));
 	}
+	//Return our self, so it's possible to dot several times.
 	return (*this);
-}
-
-MatVar&   MatVar::SetStructFieldByName(const std::string& field_name,size_t index,MatVar &field)
-{
-	if(_matvar != nullptr)
-	{
-		const char *temp_field_name = field_name.c_str();
-		//TODO how to send private pointer to Mat_VarSetCell?
-		//matvar_t* t = Mat_VarSetStructFieldByName(_matvar,temp_field_name,index, &field);
-		//return *(new MatVar(t));
-	}
-	return (*this);
-}
-
-//TODO move
-int MatVar::Write(Mat &_mat,MatVar &_matvar, compression compress )
-{
-
-	//return Mat_VarWrite(_matvar,&field_name.c_str(),index, &field);
-
-	return 0;
-}
-
-//TODO move
-int MatVar::WriteInfo(Mat &_mat,MatVar &_matvar)
-{
-	//EXTERN int        Mat_VarWriteInfo(mat_t *_mat,matvar_t *_matvar);
-	return 0;
-}
-
-int MatVar::WriteData(Mat &_mat,MatVar &_matvar,void *data,
-		int *start,int *stride,int *edge)
-{
-	//EXTERN int        Mat_VarWriteData(mat_t *_mat,matvar_t *_matvar,void *data, int *start,int *stride,int *edge);
-
-	return 0;
 }
 
 
