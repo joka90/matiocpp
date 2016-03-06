@@ -236,8 +236,11 @@ Mat::~Mat()
 {
 	for(auto& var: _vars)
 	{
-		Mat_VarFree(var.second);
-		var.second=nullptr;
+		if(var.second != nullptr)
+		{
+			Mat_VarFree(var.second);
+			var.second=nullptr;
+		}
 	}
 	_vars.clear();
 
@@ -275,14 +278,14 @@ bool Mat::Open(const std::string& matname, acc mode)
 		_mat = t;
 
 		matvar_t * matvar;
-		do {
+		do{
 			matvar = Mat_VarReadNextInfo(_mat);
-			if ( matvar != NULL )
+			if(matvar != NULL)
 			{
 				std::string name = matvar->name;
 				_vars[name]=matvar;
 			}
-		} while ( NULL != matvar);
+		}while(NULL != matvar);
 		Mat_Rewind(_mat);
 		return _mat != nullptr;
 	}
@@ -302,7 +305,10 @@ std::vector<std::string> Mat::GetVarNames() const
 	std::vector<std::string> fields;
 	for(auto& var: _vars)
 	{
-		fields.push_back(var.first);
+		if(var.second != nullptr)
+		{
+			fields.push_back(var.first);
+		}
 	}
 	return fields;
 }
@@ -318,8 +324,11 @@ bool Mat::Close()
 	{
 		for(auto& var: _vars)
 		{
-			Mat_VarFree(var.second);
-			var.second=nullptr;
+			if(var.second != nullptr)
+			{
+				Mat_VarFree(var.second);
+				var.second=nullptr;
+			}
 		}
 		_vars.clear();
 		Mat_Close(_mat);
@@ -356,8 +365,11 @@ MatVar&  Mat::Read(const std::string& name)
 		if (it != _vars.end())
 		{
 			t=it->second;
-			Mat_VarReadDataAll(_mat,t);
-			return *(new MatVar(t));
+			if(t != nullptr)
+			{
+				Mat_VarReadDataAll(_mat,t);
+				return *(new MatVar(t));
+			}
 		}
 	}
 	return *(new MatVar());
@@ -367,6 +379,9 @@ bool Mat::Write(MatVar &_matvar, compression compress)
 {
 	if(_mat != nullptr && _matvar._matvar != nullptr)
 	{
+		std::string name = _matvar._matvar->name;
+		_vars[name]=_matvar._matvar;
+
 		return 0 == Mat_VarWrite(_mat,_matvar._matvar, convEnum(compress));
 	}
 	return false;
@@ -385,6 +400,9 @@ bool Mat::WriteData(MatVar &_matvar,void *data, int *start,int *stride,int *edge
 {
 	if(_mat != nullptr && _matvar._matvar != nullptr)
 	{
+		std::string name = _matvar._matvar->name;
+		_vars[name]=_matvar._matvar;
+
 		return 0 == Mat_VarWriteData(_mat,_matvar._matvar, data, start, stride, edge);
 	}
 	return false;
@@ -399,7 +417,10 @@ MatVar&  Mat::ReadInfo(const std::string& name)
 		if (it != _vars.end())
 		{
 			t=it->second;
-			return *(new MatVar(t));
+			if(t != nullptr)
+			{
+				return *(new MatVar(t));
+			}
 		}
 	}
 	return *(new MatVar());
@@ -409,11 +430,11 @@ bool Mat::Delete(const std::string& name)
 {
 	if(_mat != nullptr)
 	{
-		matvar_t* t;
+		//matvar_t* t;
 		auto it = _vars.find(name);
 		if (it != _vars.end())
 		{
-			t=it->second;
+			//t=it->second;
 			const char *temp_name = name.c_str();
 			int ret = Mat_VarDelete(_mat, temp_name);
 			if(ret == 0)
@@ -585,7 +606,6 @@ MatVar&  MatVar::GetStructField(const std::string& field_name, int opt,int index
 	return (*this);
 }
 
-//TODO add without copy
 MatVar&  MatVar::GetStructs(int *start, int *stride, int *edge, int copy_fields)
 {
 	if(_matvar != nullptr)
@@ -596,7 +616,6 @@ MatVar&  MatVar::GetStructs(int *start, int *stride, int *edge, int copy_fields)
 	return (*this);
 }
 
-//TODO add without copy
 MatVar&  MatVar::GetStructsLinear(int start, int stride, int edge, int copy_fields)
 {
 	if(_matvar != nullptr)
@@ -614,6 +633,7 @@ void MatVar::Print(int printdata)
 		Mat_VarPrint(_matvar, printdata);
 	}
 }
+
 bool MatVar::ReadDataAll()
 {
 	//TODO if imitate read for some reason
