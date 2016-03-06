@@ -241,7 +241,7 @@ Mat::~Mat()
 {
 	if(_mat != nullptr)
 	{
-		delete _mat;
+		//delete _mat;
 		_mat = nullptr;
 	}
 }
@@ -259,7 +259,7 @@ int Mat::Open(const std::string& matname, acc mode)
 	{
 		const char *temp_matname = matname.c_str();
 		_mat = Mat_Open(temp_matname, convEnum(mode));
-		return _mat == nullptr;
+		return _mat != nullptr;
 	}
 	return 0;
 }
@@ -268,7 +268,8 @@ int Mat::Close()
 {
 	if(_mat != nullptr)
 	{
-		return Mat_Close(_mat);
+		Mat_Close(_mat);
+		_mat = nullptr;
 	}
 	return 0;
 }
