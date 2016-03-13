@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+    <PropertyGroup>
+        <!-- Properties which affect the build process -->
+	    <OutputType>Library</OutputType>
+	    <AppDesignerFolder>Properties</AppDesignerFolder>
+	    <RootNamespace>matio</RootNamespace>
+	    <AssemblyName>matio</AssemblyName>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Groups of items to process -->
+		<Compile Include="acc.cs" />
+		<Compile Include="classes.cs" />
+		<Compile Include="compression.cs" />
+		<Compile Include="flags.cs" />
+		<Compile Include="ft.cs" />
+		<Compile Include="lookup.cs" />
+		<Compile Include="Mat.cs" />
+		<Compile Include="matio.cs" />
+		<Compile Include="matioPINVOKE.cs" />
+		<Compile Include="MatVar.cs" />
+		<Compile Include="SWIGTYPE_p_int.cs" />
+		<Compile Include="SWIGTYPE_p_matvar_t.cs" />
+		<Compile Include="SWIGTYPE_p_p_char.cs" />
+		<Compile Include="SWIGTYPE_p_size_t.cs" />
+		<Compile Include="SWIGTYPE_p_std__vectorT_std__string_t.cs" />
+		<Compile Include="SWIGTYPE_p_void.cs" />
+		<Compile Include="types.cs" />
+    </ItemGroup>
+	<Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+</Project>

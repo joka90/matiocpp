@@ -9,7 +9,10 @@ LDFLAGS+=`pkg-config --libs  matiocpp`
 PYCFLAGS=$(CFLAGS) `pkg-config --cflags python`
 PYLDFLAGS=$(LDFLAGS) `pkg-config --libs python`
 
-all: pythonlib csharp
+CSCFLAGS=$(CFLAGS) `pkg-config --cflags mono-2`
+CSLDFLAGS=$(LDFLAGS) `pkg-config --libs mono-2`
+
+all: pythonlib csharpdll
 
 csdir:
 	mkdir -p csharp
@@ -23,6 +26,18 @@ pydir:
 csharp: matio.i csdir
 	swig -c++ -outdir i_csharp -o csharp/matio_wrap.cpp -csharp matio.i
 
+#build the shared lib
+csharplib: csharplib.o
+	$(CPP) -shared csharp/pythonlib.o $(CSLDFLAGS) -o i_csharp/_matio.so
+
+# Build o files
+csharplib.o: csharp
+	$(CC) $(CSCFLAGS) -fPIC -c csharp/matio_wrap.cpp -o csharp/csharplib.o
+#build dll
+csharpdll: csharplib
+	xbuild i_csharp/matio.csproj
+
+#Generate python wrapper
 python: matio.i pydir
 	swig -c++ -outdir i_python -o python/matio_wrap.cpp -python matio.i
 
@@ -36,4 +51,4 @@ pythonlib.o: python
 
 
 clean:
-	rm i_csharp/*.cs csharp/*.cpp csharp/*.o i_python/*.py python/*.cpp python/*.o *.so
+	rm i_csharp/*.cs csharp/*.cpp csharp/*.o i_python/*.py python/*.cpp python/*.o i_python/*.so i_csharp/*.so i_csharp/bin/Debug/matio.dll
