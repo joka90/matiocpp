@@ -52,4 +52,4 @@ pythonlib.o: python
 
 
 clean:
-	rm i_csharp/*.cs csharp/*.cpp csharp/*.o i_python/*.py python/*.cpp python/*.o i_python/*.so i_csharp/*.so i_csharp/bin/Debug/matio.dll
+	rm i_csharp/*.cs csharp/*.cpp csharp/*.o i_python/matio.py python/*.cpp python/*.o i_python/*.so i_csharp/*.so i_csharp/bin/Debug/matio.dll
