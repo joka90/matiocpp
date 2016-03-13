@@ -1,15 +1,15 @@
 CC=g++
 CPP=gcc
-CFLAGS=-c -Wall -std=c++11 -I.
+CFLAGS=-c -Wall -std=c++11 -Iinclude/
 LDFLAGS=
 # matio compile and linker flags
 CFLAGS+=`pkg-config --cflags matio`
 LDFLAGS+=`pkg-config --libs  matio`
 
-MATIOCPPSOURCES=matio.cpp 
+MATIOCPPSOURCES=src/matio.cpp 
 MATIOCPPOBJECTS=$(MATIOCPPSOURCES:.cpp=.o)
 
-TESTSOURCES=matiotest.cpp
+TESTSOURCES=src/matiotest.cpp
 TESTOBJECTS=$(TESTSOURCES:.cpp=.o)
 
 all: libmatiocpp matiotest
@@ -27,4 +27,4 @@ libmatiocpp: $(MATIOCPPOBJECTS)
 	$(CC) $(CFLAGS) -fPIC $< -o $@
 
 clean:
-	rm *.o *.so matiotest
+	rm *.o src/*.o *.so matiotest
