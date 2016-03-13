@@ -190,6 +190,7 @@ public:
 	MatVar(std::string name, classes class_type, types data_type, int rank, size_t *dims, void *data, flags opt);
 	MatVar(std::string name, int rank, size_t *dims, const char **fields, unsigned nfields);
 	MatVar(const MatVar &in);
+	MatVar& operator=(const MatVar& in);
 	MatVar&  GetCell(int index);
 	MatVar&  GetCells(int *start, int *stride, int *edge);
 	MatVar&  GetCellsLinear(int start, int stride, int edge);

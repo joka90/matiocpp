@@ -470,7 +470,62 @@ MatVar::~MatVar()
 	}
 }
 
-
+/** @brief Creates a MAT Variable with the given name and (optionally) data
+ *
+ * Creates a MAT variable that can be written to a Matlab MAT file with the
+ * given name, data type, dimensions and data.  Rank should always be 2 or more.
+ * i.e. Scalar values would have rank=2 and dims[2] = {1,1}.  Data type is
+ * one of the MAT_T types.  MAT adds MAT_T_STRUCT and MAT_T_CELL to create
+ * Structures and Cell Arrays respectively.  For MAT_T_STRUCT, data should be a
+ * NULL terminated array of matvar_t * variables (i.e. for a 3x2 structure with
+ * 10 fields, there should be 61 matvar_t * variables where the last one is
+ * NULL).  For cell arrays, the NULL termination isn't necessary.  So to create
+ * a cell array of size 3x2, data would be the address of an array of 6
+ * matvar_t * variables.
+ *
+ * EXAMPLE:
+ *   To create a struct of size 3x2 with 3 fields:
+ * @code
+ *     int rank=2, dims[2] = {3,2}, nfields = 3;
+ *     matvar_t **vars;
+ *
+ *     vars = malloc((3*2*nfields+1)*sizeof(matvar_t *));
+ *     vars[0]             = Mat_VarCreate(...);
+ *        :
+ *     vars[3*2*nfields-1] = Mat_VarCreate(...);
+ *     vars[3*2*nfields]   = NULL;
+ * @endcode
+ *
+ * EXAMPLE:
+ *   To create a cell array of size 3x2:
+ * @code
+ *     int rank=2, dims[2] = {3,2};
+ *     matvar_t **vars;
+ *
+ *     vars = malloc(3*2*sizeof(matvar_t *));
+ *     vars[0]             = Mat_VarCreate(...);
+ *        :
+ *     vars[5] = Mat_VarCreate(...);
+ * @endcode
+ *
+ * @ingroup MAT
+ * @param name Name of the variable to create
+ * @param class_type class type of the variable in Matlab(one of the mx Classes)
+ * @param data_type data type of the variable (one of the MAT_T_ Types)
+ * @param rank Rank of the variable
+ * @param dims array of dimensions of the variable of size rank
+ * @param data pointer to the data
+ * @param opt 0, or bitwise or of the following options:
+ * - MAT_F_DONT_COPY_DATA to just use the pointer to the data and not copy the
+ *       data itself. Note that the pointer should not be freed until you are
+ *       done with the mat variable.  The Mat_VarFree function will NOT free
+ *       data that was created with MAT_F_DONT_COPY_DATA, so free it yourself.
+ * - MAT_F_COMPLEX to specify that the data is complex.  The data variable
+ *       should be a pointer to a mat_complex_split_t type.
+ * - MAT_F_GLOBAL to assign the variable as a global variable
+ * - MAT_F_LOGICAL to specify that it is a logical variable
+ * @return A MAT variable that can be written to a file or otherwise used
+ */
 MatVar::MatVar(std::string name, classes class_type, types data_type, int rank, size_t *dims, void *data, flags opt)
 {
 	const char *temp_fieldname = name.c_str();
@@ -479,6 +534,16 @@ MatVar::MatVar(std::string name, classes class_type, types data_type, int rank, 
 			data, convEnum(opt));
 }
 
+/** @brief Creates a structure MATLAB variable with the given name and fields
+ *
+ * @ingroup MAT
+ * @param name Name of the structure variable to create
+ * @param rank Rank of the variable
+ * @param dims array of dimensions of the variable of size rank
+ * @param fields Array of @c nfields fieldnames
+ * @param nfields Number of fields in the structure
+ * @return Pointer to the new structure MATLAB variable on success, NULL on error
+ */
 MatVar::MatVar(std::string name, int rank, size_t *dims, const char **fields, unsigned nfields)
 {
 	const char *temp_fieldname = name.c_str();
@@ -491,6 +556,26 @@ MatVar::MatVar(const MatVar &in)
 
 }
 
+MatVar& MatVar::operator=(const MatVar& in)
+{
+  // This gracefully handles self assignment
+  matvar_t* tmp = in._matvar;// No corruption if this line threw an exception
+  if(_matvar != nullptr)
+  {
+	  Mat_VarFree(_matvar);
+  }
+  _matvar = tmp;
+  return *this;
+}
+
+/** @brief Returns a pointer to the Cell array at a specific index
+ *
+ * Returns a Reference to the Cell Array Field at the given 1-relative index.
+ * MAT file must be a version 5 matlab file.
+ * @ingroup MAT
+ * @param index linear index of cell to return
+ * @return Reference to the Cell Array Field on success, empty object on fail.
+ */
 MatVar&  MatVar::GetCell(int index)
 {
 	if(_matvar != nullptr)
@@ -501,6 +586,24 @@ MatVar&  MatVar::GetCell(int index)
 	return (*this);
 }
 
+/** @brief Indexes a cell array
+ *
+ * Finds cells of a cell array given a start, stride, and edge for each.
+ * dimension.  The cells are placed in a pointer array.  The cells should not
+ * be freed, but the array of pointers should be.  If copies are needed,
+ * use Mat_VarDuplicate on each cell.
+ *
+ * Note that this function is limited to structure arrays with a rank less than
+ * 10.
+ *
+ * @ingroup MAT
+ * @param start vector of length rank with 0-relative starting coordinates for
+ *              each dimension.
+ * @param stride vector of length rank with strides for each dimension.
+ * @param edge vector of length rank with the number of elements to read in
+ *              each dimension.
+ * @returns Reference to the Cell Array Field on success, empty object on fail.
+ */
 MatVar&  MatVar::GetCells(int *start,int *stride, int *edge)
 {
 	if(_matvar != nullptr)
@@ -511,6 +614,19 @@ MatVar&  MatVar::GetCells(int *start,int *stride, int *edge)
 	return (*this);
 }
 
+/** @brief Indexes a cell array
+ *
+ * Finds cells of a cell array given a linear indexed start, stride, and edge.
+ * The cells are placed in a pointer array.  The cells themself should not
+ * be freed as they are part of the original cell array, but the pointer array
+ * should be.  If copies are needed, use Mat_VarDuplicate on each of the cells.
+ * MAT file version must be 5.
+ * @ingroup MAT
+ * @param start starting index
+ * @param stride stride
+ * @param edge Number of cells to get
+ * @returns an array of pointers to the cells
+ */
 MatVar&  MatVar::GetCellsLinear(int start,int stride, int edge)
 {
 	if(_matvar != nullptr)
@@ -595,7 +711,7 @@ MatVar&  MatVar::GetStructField(size_t name_or_index, int opt, int index)
 	return (*this);
 }
 
-MatVar&  MatVar::GetStructField(const std::string& field_name, int opt,int index)
+MatVar&  MatVar::GetStructField(const std::string& field_name, int opt, int index)
 {
 	if(_matvar != nullptr)
 	{
@@ -660,7 +776,7 @@ MatVar& MatVar::SetStructFieldByIndex(size_t field_index, size_t index, MatVar &
 	return (*this);
 }
 
-MatVar& MatVar::SetStructFieldByName(const std::string& field_name,size_t index,MatVar &field)
+MatVar& MatVar::SetStructFieldByName(const std::string& field_name, size_t index, MatVar &field)
 {
 	if(_matvar != nullptr)
 	{

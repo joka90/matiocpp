@@ -1,7 +1,7 @@
 CC=g++
 CPP=gcc
 CFLAGS=-c -Wall -std=c++11 -I.
-LDFLAGS=-lmatio -lz
+LDFLAGS=
 # matio compile and linker flags
 CFLAGS+=`pkg-config --cflags matio`
 LDFLAGS+=`pkg-config --libs  matio`
