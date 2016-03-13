@@ -24,15 +24,16 @@ pydir:
 
 #Generate Csharp wrapper
 csharp: matio.i csdir
-	swig -c++ -outdir i_csharp -o csharp/matio_wrap.cpp -csharp matio.i
+	swig -c++ -namespace matio -outdir i_csharp -o csharp/matio_wrap.cpp -csharp matio.i
 
 #build the shared lib
 csharplib: csharplib.o
-	$(CPP) -shared csharp/pythonlib.o $(CSLDFLAGS) -o i_csharp/_matio.so
+	$(CPP) -shared csharp/csharplib.o $(CSLDFLAGS) -o i_csharp/_matio.so
 
 # Build o files
 csharplib.o: csharp
 	$(CC) $(CSCFLAGS) -fPIC -c csharp/matio_wrap.cpp -o csharp/csharplib.o
+
 #build dll
 csharpdll: csharplib
 	xbuild i_csharp/matio.csproj

@@ -126,29 +126,6 @@ enum class lookup : char {
 			MAT_BY_INDEX = 2  /**< Lookup by index */
 };
 
-
-/* Library function */
-//EXTERN void Mat_GetLibraryVersion(int *major,int *minor,int *release);
-
-/*     io.c         */
-//EXTERN char  *strdup_vprintf(const char *format, va_list ap);
-//EXTERN char  *strdup_printf(const char *format, ...);
-//EXTERN int    Mat_SetVerbose( int verb, int s );
-//EXTERN int    Mat_SetDebug( int d );
-//EXTERN void   Mat_Critical( const char *format, ... );
-//EXTERN MATIO_NORETURN void Mat_Error( const char *format, ... ) MATIO_NORETURNATTR;
-//EXTERN void   Mat_Help( const char *helpstr[] );
-//EXTERN int    Mat_LogInit( const char *progname );
-//EXTERN int    Mat_LogClose(void);
-//EXTERN int    Mat_LogInitFunc(const char *prog_name,
-//                    void (*log_func)(int log_level, char *message) );
-//EXTERN int    Mat_Message( const char *format, ... );
-//EXTERN int    Mat_DebugMessage( int level, const char *format, ... );
-//EXTERN int    Mat_VerbMessage( int level, const char *format, ... );
-//EXTERN void   Mat_Warning( const char *format, ... );
-//EXTERN size_t Mat_SizeOf(enum matio_types data_type);
-//EXTERN size_t Mat_SizeOfClass(int class_type);
-
 //Forward declare MatVar
 class MatVar;
 
@@ -221,6 +198,38 @@ private:
 %include "std_vector.i"
 %include "std_map.i"
 %include "std_string.i"
+
+//For SWIG
+typedef long unsigned int size_t;
+
+#ifdef SWIGCSHARP
+%include "arrays_csharp.i"
+
+%apply int INPUT[]  {int *start, int *stride, int *edge}
+%apply size_t INPUT[]  {size_t *dims}
+%apply const char **INPUT[]  {const char **fields};
+%apply void *INPUT[]  {void *data};
+//%apply int OUTPUT[] {int *targetArray}
+#endif
+
+#ifdef SWIGPYTHON
+%include "typemaps.i"
+
+//%apply int *OUTPUT { int *result };
+%apply int *INPUT  {int *start, int *stride, int *edge};
+%apply size_t *INPUT  {size_t *dims};
+%apply const char **INPUT  {const char **fields};
+%apply void *INPUT  {void *data};
+%include "carrays.i"
+
+%array_class(double, doubleArray);
+%array_class(int, intArray);
+%array_class(char, charArray);
+
+#endif
+//TODO char fields and void data pointer
+//MatVar(std::string name, classes class_type, types data_type, int rank, size_t *dims, void *data, flags opt);
+//MatVar(std::string name, int rank, size_t *dims, const char **fields, unsigned nfields);
 
 #include <string>
 #include <map>
@@ -348,29 +357,6 @@ enum class lookup : char {
 			MAT_BY_INDEX = 2  /**< Lookup by index */
 };
 
-
-/* Library function */
-//EXTERN void Mat_GetLibraryVersion(int *major,int *minor,int *release);
-
-/*     io.c         */
-//EXTERN char  *strdup_vprintf(const char *format, va_list ap);
-//EXTERN char  *strdup_printf(const char *format, ...);
-//EXTERN int    Mat_SetVerbose( int verb, int s );
-//EXTERN int    Mat_SetDebug( int d );
-//EXTERN void   Mat_Critical( const char *format, ... );
-//EXTERN MATIO_NORETURN void Mat_Error( const char *format, ... ) MATIO_NORETURNATTR;
-//EXTERN void   Mat_Help( const char *helpstr[] );
-//EXTERN int    Mat_LogInit( const char *progname );
-//EXTERN int    Mat_LogClose(void);
-//EXTERN int    Mat_LogInitFunc(const char *prog_name,
-//                    void (*log_func)(int log_level, char *message) );
-//EXTERN int    Mat_Message( const char *format, ... );
-//EXTERN int    Mat_DebugMessage( int level, const char *format, ... );
-//EXTERN int    Mat_VerbMessage( int level, const char *format, ... );
-//EXTERN void   Mat_Warning( const char *format, ... );
-//EXTERN size_t Mat_SizeOf(enum matio_types data_type);
-//EXTERN size_t Mat_SizeOfClass(int class_type);
-
 //Forward declare MatVar
 class MatVar;
 
@@ -423,7 +409,7 @@ public:
 	MatVar&  GetStructField(size_t name_or_index, int opt, int index);
 	MatVar&  GetStructField(const std::string& name_or_index, int opt, int index);
 
-	MatVar&  GetStructs(int *start,int *stride, int *edge,int copy_fields);
+	MatVar&  GetStructs(int *start, int *stride, int *edge, int copy_fields);
 	MatVar&  GetStructsLinear(int start,int stride, int edge,int copy_fields);
 	void     Print(int printdata );
 	bool     ReadDataAll();
