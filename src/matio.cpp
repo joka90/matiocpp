@@ -562,7 +562,7 @@ MatVar& MatVar::operator=(const MatVar& in)
   matvar_t* tmp = in._matvar;// No corruption if this line threw an exception
   if(_matvar != nullptr)
   {
-	  Mat_VarFree(_matvar);
+	  //Mat_VarFree(_matvar);
   }
   _matvar = tmp;
   return *this;
