@@ -39,10 +39,10 @@ int main(int argc, char* argv[])
 	size_t r = 4;
 	matio::MatVar v1("v1", matio::classes::MAT_C_DOUBLE, matio::types::MAT_T_DOUBLE, 4, &r, v1d, matio::flags::MAT_F_GLOBAL);
 
-	matio::Mat mat2("new.mat",matio::ft::MAT_FT_MAT4);
+	//matio::Mat mat2("new.mat",matio::ft::MAT_FT_MAT4);
 	//mat2.Open("new.mat",matio::acc::MAT_ACC_RDWR);
-	mat2.Write(v1,matio::compression::MAT_COMPRESSION_NONE);
-	mat2.Close();
+	//mat2.Write(v1,matio::compression::MAT_COMPRESSION_NONE);
+	//mat2.Close();
 	//TODO
 	//const char fil[][]={'hej', 'hopp', 'gummi'};
 	//matio::MatVar v2("v2", 3, &r, fil, 3);
